@@ -1,0 +1,45 @@
+import os
+from pathlib import Path
+
+def generate_rag_markdown(repo_path, output_file):
+    repo_path = Path(repo_path)
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write("# Nephio 蓝图包知识库 (Processed for RAGFlow)\n\n")
+        f.write("此文档包含了 Nephio 项目中的核心蓝图定义，包括 Kptfile 和资源配置。\n\n---\n\n")
+
+        # 遍历所有文件夹
+        for root, dirs, files in os.walk(repo_path):
+            # 过滤掉隐藏文件夹和非包目录
+            if '.git' in root or '.github' in root:
+                continue
+            
+            # 检查当前目录下是否有 Kptfile，以此判断是否为一个 Nephio 包
+            if 'Kptfile' in files:
+                rel_path = os.path.relpath(root, repo_path)
+                f.write(f"## 📦 蓝图包路径: {rel_path}\n")
+                f.write(f"**包描述**: 位于 `{rel_path}` 的 Nephio 官方示例包。\n\n")
+
+                # 优先处理 Kptfile
+                for file_name in sorted(files):
+                    if file_name == 'Kptfile' or file_name.endswith(('.yaml', '.yml')):
+                        file_path = Path(root) / file_name
+                        try:
+                            content = file_path.read_text(encoding='utf-8')
+                            f.write(f"### 📄 文件: {file_name}\n")
+                            f.write(f"关联路径: `{rel_path}/{file_name}`\n")
+                            f.write(f"```yaml\n{content}\n```\n\n")
+                        except Exception as e:
+                            print(f"无法读取文件 {file_path}: {e}")
+                
+                f.write("---\n\n")
+
+if __name__ == "__main__":
+    # 请确保你已经 git clone 了仓库
+    repo_dir = "./nephio-example-packages" 
+    output_md = "nephio_knowledge_base.md"
+    
+    if os.path.exists(repo_dir):
+        generate_rag_markdown(repo_dir, output_md)
+        print(f"成功！整理后的知识库已保存至: {output_md}")
+    else:
+        print("错误：未找到仓库目录，请检查路径。")
